@@ -1,0 +1,1008 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="icon" type="image/x-icon" href="favicon.png">
+    <title>SolanoWorkout (V11 Ultimate)</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        slate: { 850: '#1e293b', 900: '#0f172a' },
+                        emerald: { 450: '#10b981', 500: '#10b981' }
+                    }
+                }
+            }
+        }
+    </script>
+    <style>
+        body { background-color: #0f172a; color: #e2e8f0; font-family: 'Inter', sans-serif; }
+        .card { background-color: #1e293b; border: 1px solid #334155; border-radius: 0.75rem; }
+        .input-dark { background-color: #334155; border: 1px solid #475569; color: white; border-radius: 0.5rem; padding: 0.5rem; width: 100%; }
+        .btn-primary { background-color: #10b981; color: white; padding: 0.5rem 1rem; border-radius: 0.5rem; font-weight: 600; transition: 0.2s; }
+        .btn-primary:hover { background-color: #059669; }
+        .btn-secondary { background-color: #334155; color: #cbd5e1; padding: 0.25rem 0.75rem; border-radius: 0.5rem; font-size: 0.875rem; transition: 0.2s; }
+        .btn-secondary:hover, .btn-secondary.active { background-color: #475569; color: white; border: 1px solid #64748b; }
+        
+        .nav-item { cursor: pointer; padding: 0.75rem 1rem; border-radius: 0.5rem; transition: 0.2s; display: flex; align-items: center; gap: 0.75rem; }
+        .nav-item:hover, .nav-item.active { background-color: #334155; color: #34d399; }
+        
+        /* Scrollbar custom */
+        ::-webkit-scrollbar { width: 8px; }
+        ::-webkit-scrollbar-track { background: #0f172a; }
+        ::-webkit-scrollbar-thumb { background: #334155; border-radius: 4px; }
+        ::-webkit-scrollbar-thumb:hover { background: #475569; }
+    </style>
+</head>
+<body class="h-screen flex overflow-hidden">
+
+    <aside id="sidebar" class="w-64 bg-slate-900 border-r border-slate-800 flex-shrink-0 hidden md:flex flex-col fixed md:relative inset-y-0 left-0 z-50 h-full">
+        <div class="p-6 flex justify-between items-center">
+            <div>
+                <h1 class="text-2xl font-bold text-white tracking-tight">Solano<span class="text-emerald-400">Workout</span></h1>
+                <p class="text-xs text-slate-500 mt-1">Dashboard V11</p>
+            </div>
+            <button onclick="toggleMenu()" class="md:hidden text-slate-400 hover:text-white">
+                <i class="fas fa-times text-xl"></i>
+            </button>
+        </div>
+        <nav class="flex-1 px-4 space-y-2">
+            <div onclick="switchTab('dashboard')" id="nav-dashboard" class="nav-item active">
+                <i class="fas fa-chart-line w-5"></i> Dashboard
+            </div>
+            <div onclick="switchTab('workouts')" id="nav-workouts" class="nav-item">
+                <i class="fas fa-dumbbell w-5"></i> Entraînement
+            </div>
+            <div onclick="switchTab('nutrition')" id="nav-nutrition" class="nav-item">
+                <i class="fas fa-utensils w-5"></i> Nutrition (Full)
+            </div>
+            <div onclick="switchTab('roadmap')" id="nav-roadmap" class="nav-item">
+                <i class="fas fa-flag-checkered w-5"></i> Projection 6 Mois
+            </div>
+            <div onclick="switchTab('settings')" id="nav-settings" class="nav-item">
+                <i class="fas fa-database w-5"></i> Data & Save
+            </div>
+        </nav>
+    </aside>
+
+    <main class="flex-1 overflow-y-auto relative">
+        <header class="md:hidden bg-slate-900 p-4 border-b border-slate-800 flex justify-between items-center sticky top-0 z-10">
+            <h1 class="font-bold text-emerald-400">SolanoWorkout</h1>
+            <button onclick="toggleMenu()" class="text-white p-2"><i class="fas fa-bars text-xl"></i></button>
+        </header>
+
+        <div class="p-6 max-w-7xl mx-auto space-y-6">
+            
+            <div id="tab-dashboard" class="tab-content">
+                <div class="flex justify-between items-center mb-6">
+                    <h2 class="text-2xl font-bold text-white">Status Actuel</h2>
+                    <button onclick="openModal()" class="btn-primary text-sm shadow-lg shadow-emerald-500/20"><i class="fas fa-plus mr-2"></i>Entrer métriques</button>
+                </div>
+
+                <div class="grid grid-cols-2 md:grid-cols-5 gap-4 mb-8">
+                    <div class="card p-4">
+                        <p class="text-xs text-slate-400 uppercase">Poids (kg)</p>
+                        <p class="text-2xl font-bold text-white mt-1" id="disp-weight">--</p>
+                        <p class="text-xs text-emerald-400 mt-1">Start: 69.9</p>
+                    </div>
+                    <div class="card p-4">
+                        <p class="text-xs text-slate-400 uppercase">Body Fat (%)</p>
+                        <p class="text-2xl font-bold text-white mt-1" id="disp-fat">--</p>
+                        <p class="text-xs text-emerald-400 mt-1">Cible: 12%</p>
+                    </div>
+                    <div class="card p-4 border-emerald-500/30 bg-emerald-900/10">
+                        <p class="text-xs text-emerald-400 uppercase font-bold">Masse Muscle</p>
+                        <p class="text-2xl font-bold text-white mt-1" id="disp-muscle">--</p>
+                        <p class="text-xs text-emerald-400 mt-1">Cible: 59kg</p>
+                    </div>
+                    <div class="card p-4">
+                        <p class="text-xs text-slate-400 uppercase">Eau (%)</p>
+                        <p class="text-2xl font-bold text-white mt-1" id="disp-water">--</p>
+                        <p class="text-xs text-blue-400 mt-1">Cible: >60%</p>
+                    </div>
+                    <div class="card p-4">
+                        <p class="text-xs text-slate-400 uppercase">BMI</p>
+                        <p class="text-2xl font-bold text-white mt-1" id="disp-bmi">--</p>
+                    </div>
+                </div>
+
+                <div class="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-8">
+                    <div class="card p-6 col-span-2 relative">
+                        <div class="flex flex-col md:flex-row justify-between items-start md:items-center mb-4 gap-4">
+                            <h3 class="text-lg font-bold">Évolution & Projections</h3>
+                            <div class="flex flex-wrap gap-2 items-center">
+                                <div class="flex bg-slate-800 rounded-lg p-1 mr-2">
+                                    <button onclick="setChartRange('7d')" id="btn-7d" class="btn-secondary">7j</button>
+                                    <button onclick="setChartRange('30d')" id="btn-30d" class="btn-secondary">30j</button>
+                                    <button onclick="setChartRange('all')" id="btn-all" class="btn-secondary active">Tout</button>
+                                </div>
+                                <label class="flex items-center space-x-2 text-sm text-slate-300 cursor-pointer bg-slate-800 px-3 py-1.5 rounded-lg border border-slate-700 hover:bg-slate-700 transition">
+                                    <input type="checkbox" id="toggle-projection" class="accent-emerald-500" onchange="updateChart()">
+                                    <span>Projection</span>
+                                </label>
+                            </div>
+                        </div>
+                        <div class="h-72">
+                            <canvas id="progressChart"></canvas>
+                        </div>
+                        <div class="mt-2 flex flex-wrap justify-center gap-6 text-xs text-slate-400">
+                             <div class="flex items-center gap-2"><span class="w-3 h-3 rounded-full bg-slate-200"></span> Poids</div>
+                             <div class="flex items-center gap-2"><span class="w-3 h-3 rounded-full bg-emerald-500"></span> Muscle</div>
+                             <div class="flex items-center gap-2"><span class="w-3 h-3 rounded-full bg-orange-500"></span> Fat %</div>
+                             <div class="flex items-center gap-2 ml-4"><span class="w-4 h-0 border-t-2 border-dashed border-slate-500"></span> Objectifs</div>
+                        </div>
+                    </div>
+                    
+                    <div class="space-y-6">
+                        <div class="card p-6 border-t-4 border-blue-500">
+                            <h3 class="text-lg font-bold mb-3 text-white">La Science (TDEE)</h3>
+                            <div class="space-y-2 text-sm">
+                                <div class="flex justify-between text-slate-300">
+                                    <span>Calories Brûlées (Total):</span>
+                                    <span class="font-bold text-white">~2,680</span>
+                                </div>
+                                <div class="flex justify-between text-slate-300">
+                                    <span>Calories Mangées:</span>
+                                    <span class="font-bold text-white">- 2,350</span>
+                                </div>
+                                <div class="h-px bg-slate-700 my-1"></div>
+                                <div class="flex justify-between text-emerald-400 font-bold text-base">
+                                    <span>Déficit Journalier:</span>
+                                    <span>- 330 kcal</span>
+                                </div>
+                            </div>
+                            <p class="text-xs text-slate-500 mt-3 italic">
+                                Résultat = -0.3kg pur gras / semaine.<br>
+                                C'est la vitesse parfaite pour garder le muscle.
+                            </p>
+                        </div>
+
+                        <div class="card p-6">
+                            <h3 class="text-lg font-bold mb-4">Habitudes</h3>
+                            <div class="space-y-3">
+                                <label class="flex items-center justify-between space-x-3 cursor-pointer p-2 bg-slate-800 rounded hover:bg-slate-700 transition">
+                                    <div class="flex items-center space-x-3">
+                                        <input type="checkbox" id="habit-creatine" class="w-5 h-5 accent-emerald-500 rounded" onchange="saveHabits()">
+                                        <span class="font-medium text-white text-sm">Créatine (5g)</span>
+                                    </div>
+                                    <span class="habit-streak text-xs bg-emerald-900/50 text-emerald-400 px-2 py-1 rounded" id="streak-creatine"></span>
+                                </label>
+                                <label class="flex items-center justify-between space-x-3 cursor-pointer p-2 bg-slate-800 rounded hover:bg-slate-700 transition">
+                                    <div class="flex items-center space-x-3">
+                                        <input type="checkbox" id="habit-water" class="w-5 h-5 accent-blue-500 rounded" onchange="saveHabits()">
+                                        <span class="font-medium text-white text-sm">Eau (3-4 L)</span>
+                                    </div>
+                                    <span class="habit-streak text-xs bg-blue-900/50 text-blue-400 px-2 py-1 rounded" id="streak-water"></span>
+                                </label>
+                                <label class="flex items-center justify-between space-x-3 cursor-pointer p-2 bg-slate-800 rounded hover:bg-slate-700 transition">
+                                    <div class="flex items-center space-x-3">
+                                        <input type="checkbox" id="habit-protein" class="w-5 h-5 accent-emerald-500 rounded" onchange="saveHabits()">
+                                        <span class="font-medium text-white text-sm">Protéines (160g)</span>
+                                    </div>
+                                    <span class="habit-streak text-xs bg-emerald-900/50 text-emerald-400 px-2 py-1 rounded" id="streak-protein"></span>
+                                </label>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="card overflow-hidden">
+                    <div class="p-4 border-b border-slate-700 bg-slate-800 flex justify-between items-center">
+                        <h3 class="font-bold text-white">Historique & Notes</h3>
+                        <button onclick="deleteLastLog()" class="text-xs text-red-400 hover:text-red-300 transition flex items-center gap-1">
+                            <i class="fas fa-trash"></i> Supprimer dernier
+                        </button>
+                    </div>
+                    <div class="overflow-x-auto max-h-80 overflow-y-auto">
+                        <table class="w-full text-left text-sm text-slate-400">
+                            <thead class="bg-slate-900 text-xs uppercase font-medium text-slate-200 sticky top-0">
+                                <tr>
+                                    <th class="px-4 py-3">Date</th>
+                                    <th class="px-4 py-3">Poids</th>
+                                    <th class="px-4 py-3">Fat %</th>
+                                    <th class="px-4 py-3">Note / Sensation</th>
+                                </tr>
+                            </thead>
+                            <tbody id="history-body" class="divide-y divide-slate-700">
+                                </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+
+            <div id="tab-workouts" class="tab-content hidden">
+                <div class="bg-slate-800 p-6 rounded-xl border border-emerald-500/50 mb-6 shadow-lg shadow-emerald-900/20">
+                    <h2 class="text-2xl font-bold text-white mb-4">Règles d'Engagement <span class="text-emerald-400 text-sm font-normal ml-2">(Precision Training)</span></h2>
+                    <div class="grid md:grid-cols-3 gap-6 text-sm">
+                        <div>
+                            <span class="text-emerald-400 font-bold block mb-1 text-lg">TEMPO 3-1-1</span>
+                            <p class="text-slate-300">3 sec descente. 1 sec pause en bas. 1 sec montée explosive.</p>
+                        </div>
+                        <div>
+                            <span class="text-blue-400 font-bold block mb-1 text-lg">REPOS 60s</span>
+                            <p class="text-slate-300">Chronomètre en main. L'intensité brûle le gras.</p>
+                        </div>
+                        <div>
+                            <span class="text-purple-400 font-bold block mb-1 text-lg">ECHEC</span>
+                            <p class="text-slate-300">Dernière série de chaque exo : fais-en autant que possible (AMRAP).</p>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="grid md:grid-cols-2 lg:grid-cols-3 gap-6" id="workout-container">
+                    </div>
+
+                <div class="mt-8 p-6 bg-slate-800 rounded-xl border border-slate-700">
+                    <h3 class="text-lg font-bold text-white mb-2">Comment Progresser (Overload)</h3>
+                    <div class="grid md:grid-cols-4 gap-4 text-sm text-slate-300">
+                        <div><strong class="text-white block">Semaine 1-2</strong> Base. Apprends le Tempo 3-1-1 par cœur.</div>
+                        <div><strong class="text-white block">Semaine 3-4</strong> Ajoute +2 Reps à chaque série.</div>
+                        <div><strong class="text-white block">Semaine 5-6</strong> Réduis le repos à 45 sec.</div>
+                        <div><strong class="text-white block">Semaine 7</strong> Achète des poids plus lourds.</div>
+                    </div>
+                </div>
+            </div>
+
+            <div id="tab-nutrition" class="tab-content hidden">
+                <div class="flex flex-col md:flex-row justify-between items-start md:items-center mb-6 gap-4">
+                    <div>
+                        <h2 class="text-2xl font-bold text-white">Nutrition "Précision France"</h2>
+                        <div class="flex gap-4 mt-2 text-sm text-slate-400">
+                            <span><i class="fas fa-fire text-orange-500"></i> 2350 kcal</span>
+                            <span><i class="fas fa-drumstick-bite text-emerald-500"></i> 160g Prot</span>
+                            <span><i class="fas fa-bread-slice text-blue-500"></i> 280g Carbs</span>
+                            <span><i class="fas fa-oil-can text-yellow-500"></i> 70g Fat</span>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="bg-red-900/20 border border-red-500/50 rounded-lg p-4 mb-6 flex items-start gap-3">
+                    <i class="fas fa-exclamation-triangle text-red-500 mt-1"></i>
+                    <div>
+                        <h3 class="text-red-400 font-bold text-sm uppercase">Règle d'Or : Peser CRU</h3>
+                        <p class="text-slate-300 text-sm">Le riz triple de volume en cuisant. La viande réduit. Pèse tout CRU.</p>
+                    </div>
+                </div>
+                
+                <div class="grid lg:grid-cols-3 gap-6">
+                    <div class="col-span-2 space-y-4">
+                        <div class="flex bg-slate-800 p-1 rounded-lg mb-4">
+                            <button onclick="toggleDiet('A')" id="btn-diet-A" class="flex-1 py-2 rounded text-sm font-bold bg-emerald-600 text-white transition">Jour A (Poulet/Riz)</button>
+                            <button onclick="toggleDiet('B')" id="btn-diet-B" class="flex-1 py-2 rounded text-sm font-bold text-slate-400 hover:text-white transition">Jour B (Bœuf/Pâtes)</button>
+                        </div>
+
+                        <div id="diet-content-A" class="space-y-4">
+                             <div class="card p-5 border-l-4 border-emerald-500">
+                                <div class="flex justify-between"><h3 class="font-bold text-white">Matin (8h)</h3> <span class="text-xs text-slate-400">750 kcal</span></div>
+                                <ul class="mt-2 text-sm text-slate-300 list-disc list-inside">
+                                    <li><span class="text-emerald-400 font-bold">100g</span> Flocons d'Avoine (Cru)</li>
+                                    <li>3 Œufs Entiers</li>
+                                    <li>1 Banane</li>
+                                </ul>
+                            </div>
+                            <div class="card p-5 border-l-4 border-emerald-500">
+                                <div class="flex justify-between"><h3 class="font-bold text-white">Midi (13h)</h3> <span class="text-xs text-slate-400">800 kcal</span></div>
+                                <ul class="mt-2 text-sm text-slate-300 list-disc list-inside">
+                                    <li><span class="text-emerald-400 font-bold">100g</span> Riz Basmati (Pesé CRU)</li>
+                                    <li><span class="text-emerald-400 font-bold">200g</span> Cuisse Poulet (Avec os, CRU)</li>
+                                    <li>1 c.à.s Huile</li>
+                                    <li>Haricots Verts (A volonté)</li>
+                                </ul>
+                            </div>
+                            <div class="card p-5 border-l-4 border-emerald-500">
+                                <div class="flex justify-between"><h3 class="font-bold text-white">Snack (16h30) - Le Hack</h3> <span class="text-xs text-slate-400">200 kcal</span></div>
+                                <ul class="mt-2 text-sm text-slate-300 list-disc list-inside">
+                                    <li><span class="text-emerald-400 font-bold">250g</span> Fromage Blanc (0% ou 3%)</li>
+                                    <li>1 Tranche Pain Complet</li>
+                                </ul>
+                            </div>
+                            <div class="card p-5 border-l-4 border-emerald-500">
+                                <div class="flex justify-between"><h3 class="font-bold text-white">Soir (20h30)</h3> <span class="text-xs text-slate-400">600 kcal</span></div>
+                                <ul class="mt-2 text-sm text-slate-300 list-disc list-inside">
+                                    <li><span class="text-emerald-400 font-bold">300g</span> Pommes de terre (Cru, épluché)</li>
+                                    <li>3 Œufs Entiers</li>
+                                    <li>1 c.à.s Beurre Cacahuète</li>
+                                </ul>
+                            </div>
+                        </div>
+
+                        <div id="diet-content-B" class="space-y-4 hidden">
+                             <div class="card p-5 border-l-4 border-blue-500">
+                                <div class="flex justify-between"><h3 class="font-bold text-white">Matin (8h)</h3> <span class="text-xs text-slate-400">Même chose</span></div>
+                                <ul class="mt-2 text-sm text-slate-300 list-disc list-inside">
+                                    <li><span class="text-emerald-400 font-bold">100g</span> Flocons d'Avoine</li>
+                                    <li>3 Œufs Entiers</li>
+                                    <li>1 Banane</li>
+                                </ul>
+                            </div>
+                            <div class="card p-5 border-l-4 border-blue-500">
+                                <div class="flex justify-between"><h3 class="font-bold text-white">Midi (13h) - Bolognese</h3> <span class="text-xs text-slate-400">750 kcal</span></div>
+                                <ul class="mt-2 text-sm text-slate-300 list-disc list-inside">
+                                    <li><span class="text-emerald-400 font-bold">100g</span> Pâtes (Pesé CRU)</li>
+                                    <li><span class="text-emerald-400 font-bold">125g</span> Steak Haché (CRU)</li>
+                                    <li>Sauce Tomate</li>
+                                </ul>
+                            </div>
+                            <div class="card p-5 border-l-4 border-blue-500">
+                                <div class="flex justify-between"><h3 class="font-bold text-white">Snack (16h30)</h3> <span class="text-xs text-slate-400">200 kcal</span></div>
+                                <ul class="mt-2 text-sm text-slate-300 list-disc list-inside">
+                                    <li><span class="text-emerald-400 font-bold">250g</span> Fromage Blanc</li>
+                                    <li>1 Tranche Pain Complet</li>
+                                </ul>
+                            </div>
+                            <div class="card p-5 border-l-4 border-blue-500">
+                                <div class="flex justify-between"><h3 class="font-bold text-white">Soir (20h30) - Beef Bowl</h3> <span class="text-xs text-slate-400">650 kcal</span></div>
+                                <ul class="mt-2 text-sm text-slate-300 list-disc list-inside">
+                                    <li><span class="text-emerald-400 font-bold">100g</span> Riz (CRU)</li>
+                                    <li><span class="text-emerald-400 font-bold">125g</span> Steak Haché (CRU)</li>
+                                    <li>Epinards / Légumes</li>
+                                </ul>
+                            </div>
+                        </div>
+
+                        <div class="card p-6 bg-slate-800/50 border border-slate-700">
+                            <h3 class="font-bold text-white mb-2"><i class="fas fa-clock mr-2"></i>Meal Prep (Dimanche Soir)</h3>
+                            <ul class="text-sm text-slate-400 space-y-1">
+                                <li>• Cuire <strong>300g Riz (Cru)</strong> (Pour Lun/Mar/Mer midi).</li>
+                                <li>• Cuire <strong>600g Poulet</strong>.</li>
+                                <li>• Les œufs : à faire le matin (5min).</li>
+                                <li>• Le soir : cuisson minute.</li>
+                            </ul>
+                        </div>
+                    </div>
+
+                    <div class="card p-6 h-fit">
+                        <div class="flex justify-between items-center mb-4">
+                            <h3 class="text-lg font-bold text-white">Courses (Rouen)</h3>
+                            <button onclick="resetGroceries()" class="text-xs text-slate-500 hover:text-white">Reset</button>
+                        </div>
+                        <div class="space-y-2" id="grocery-list">
+                            </div>
+                        <div class="mt-4 pt-4 border-t border-slate-700">
+                             <input type="text" id="new-item" placeholder="Ajouter un article..." class="input-dark mb-2 text-sm">
+                             <button onclick="addGroceryItem()" class="btn-primary w-full text-sm">Ajouter</button>
+                        </div>
+                        <div class="mt-6 p-4 bg-purple-900/20 rounded border border-purple-500/20">
+                            <h4 class="text-purple-400 font-bold text-sm mb-1">Cheat Meal (Samedi Soir)</h4>
+                            <p class="text-xs text-slate-400">Pas de pesée. Kebab/Pizza/Tacos autorisé.</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div id="tab-roadmap" class="tab-content hidden">
+                 <h2 class="text-2xl font-bold text-white mb-6">Projection 6 Mois (Target vs Actual)</h2>
+                 <div class="card overflow-hidden">
+                    <div class="overflow-x-auto">
+                        <table class="w-full text-left text-sm text-slate-400">
+                            <thead class="bg-slate-800 text-slate-200 uppercase font-medium">
+                                <tr>
+                                    <th class="px-6 py-4">Timeline</th>
+                                    <th class="px-6 py-4">Poids (kg)</th>
+                                    <th class="px-6 py-4">Body Fat %</th>
+                                    <th class="px-6 py-4 text-emerald-400">Muscle (kg)</th>
+                                    <th class="px-6 py-4 text-blue-400">Eau %</th>
+                                    <th class="px-6 py-4">Visual Result</th>
+                                </tr>
+                            </thead>
+                            <tbody class="divide-y divide-slate-700">
+                                <tr class="bg-slate-800/50">
+                                    <td class="px-6 py-4 font-bold text-white">Départ (Now)</td>
+                                    <td class="px-6 py-4">69.9</td>
+                                    <td class="px-6 py-4">17.0%</td>
+                                    <td class="px-6 py-4 font-bold text-emerald-400">55.0</td>
+                                    <td class="px-6 py-4 text-blue-400">56.9%</td>
+                                    <td class="px-6 py-4 italic">"Skinny-fat" / Normal</td>
+                                </tr>
+                                <tr>
+                                    <td class="px-6 py-4 font-bold text-white">Mois 1</td>
+                                    <td class="px-6 py-4">71.0 <span class="text-xs text-slate-500">(+1.1)</span></td>
+                                    <td class="px-6 py-4">16.5%</td>
+                                    <td class="px-6 py-4 text-emerald-300">56.5 <span class="text-xs text-emerald-600">(+1.45)</span></td>
+                                    <td class="px-6 py-4 text-blue-300">58.0%</td>
+                                    <td class="px-6 py-4">Muscles feel "fuller" (Creatine)</td>
+                                </tr>
+                                <tr>
+                                    <td class="px-6 py-4 font-bold text-white">Mois 2</td>
+                                    <td class="px-6 py-4">70.8 <span class="text-xs text-slate-500">(-0.2)</span></td>
+                                    <td class="px-6 py-4">15.5%</td>
+                                    <td class="px-6 py-4 text-emerald-300">56.8 <span class="text-xs text-emerald-600">(+0.3)</span></td>
+                                    <td class="px-6 py-4 text-blue-300">58.5%</td>
+                                    <td class="px-6 py-4">Stomach gets flatter</td>
+                                </tr>
+                                <tr>
+                                    <td class="px-6 py-4 font-bold text-white">Mois 3</td>
+                                    <td class="px-6 py-4">70.5 <span class="text-xs text-slate-500">(-0.3)</span></td>
+                                    <td class="px-6 py-4">14.5%</td>
+                                    <td class="px-6 py-4 text-emerald-300">57.2 <span class="text-xs text-emerald-600">(+0.4)</span></td>
+                                    <td class="px-6 py-4 text-blue-300">59.0%</td>
+                                    <td class="px-6 py-4">Abs outline appears in good light</td>
+                                </tr>
+                                <tr>
+                                    <td class="px-6 py-4 font-bold text-white">Mois 4</td>
+                                    <td class="px-6 py-4">71.0 <span class="text-xs text-slate-500">(+0.5)</span></td>
+                                    <td class="px-6 py-4">13.5%</td>
+                                    <td class="px-6 py-4 text-emerald-300">57.8 <span class="text-xs text-emerald-600">(+0.6)</span></td>
+                                    <td class="px-6 py-4 text-blue-300">60.0%</td>
+                                    <td class="px-6 py-4">Shoulders look wider, waist tiny</td>
+                                </tr>
+                                <tr>
+                                    <td class="px-6 py-4 font-bold text-white">Mois 5</td>
+                                    <td class="px-6 py-4">71.5 <span class="text-xs text-slate-500">(+0.5)</span></td>
+                                    <td class="px-6 py-4">13.0%</td>
+                                    <td class="px-6 py-4 text-emerald-300">58.3 <span class="text-xs text-emerald-600">(+0.5)</span></td>
+                                    <td class="px-6 py-4 text-blue-300">60.5%</td>
+                                    <td class="px-6 py-4">Arms show veins (vascularity)</td>
+                                </tr>
+                                <tr class="bg-emerald-900/10 border-l-4 border-emerald-500">
+                                    <td class="px-6 py-4 font-bold text-emerald-400">OBJECTIF (Mois 6)</td>
+                                    <td class="px-6 py-4 font-bold text-white">72.0</td>
+                                    <td class="px-6 py-4 font-bold text-white">12.0%</td>
+                                    <td class="px-6 py-4 font-bold text-white">59.0</td>
+                                    <td class="px-6 py-4 font-bold text-white">61.0%</td>
+                                    <td class="px-6 py-4 text-emerald-300 font-bold">Full 6-pack abs, athletic look</td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+
+            <div id="tab-settings" class="tab-content hidden">
+                <h2 class="text-2xl font-bold text-white mb-6">Gestion des Données</h2>
+                <div class="card p-6 max-w-xl">
+                    <p class="text-slate-300 mb-4 text-sm"><strong class="text-white">Important :</strong> Télécharge tes données (JSON) régulièrement.</p>
+                    <div class="flex gap-4">
+                        <button onclick="exportData()" class="btn-primary w-full bg-blue-600 hover:bg-blue-500"><i class="fas fa-download mr-2"></i> Télécharger</button>
+                    </div>
+                    <div class="mt-8 border-t border-slate-700 pt-4">
+                        <input type="file" id="import-file" class="text-sm text-slate-400 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-slate-700 file:text-white hover:file:bg-slate-600">
+                        <button onclick="importData()" class="mt-2 text-sm text-emerald-400 hover:underline">Importer</button>
+                    </div>
+                </div>
+            </div>
+
+        </div>
+    </main>
+
+    <div id="modal-metrics" class="fixed inset-0 bg-black/80 hidden flex items-center justify-center z-50 p-4">
+        <div class="bg-slate-800 p-6 rounded-xl w-full max-w-md border border-slate-700 shadow-2xl">
+            <h3 class="text-xl font-bold text-white mb-4">Ajouter Métriques</h3>
+            <form onsubmit="submitMetrics(event)" class="space-y-4">
+                <div>
+                    <label class="text-xs text-slate-400 uppercase">Poids (kg)</label>
+                    <input type="number" step="0.1" id="in-weight" class="input-dark" required>
+                </div>
+                <div class="grid grid-cols-2 gap-4">
+                    <div>
+                        <label class="text-xs text-slate-400 uppercase">Body Fat (%)</label>
+                        <input type="number" step="0.1" id="in-fat" class="input-dark">
+                    </div>
+                    <div>
+                        <label class="text-xs text-slate-400 uppercase">Muscle (kg)</label>
+                        <input type="number" step="0.1" id="in-muscle" class="input-dark">
+                    </div>
+                </div>
+                <div class="grid grid-cols-2 gap-4">
+                    <div>
+                        <label class="text-xs text-slate-400 uppercase">Eau (%)</label>
+                        <input type="number" step="0.1" id="in-water" class="input-dark">
+                    </div>
+                    <div>
+                        <label class="text-xs text-slate-400 uppercase">BMI</label>
+                        <input type="number" step="0.1" id="in-bmi" class="input-dark">
+                    </div>
+                </div>
+                <div>
+                    <label class="text-xs text-slate-400 uppercase">Notes / Sensation</label>
+                    <textarea id="in-notes" class="input-dark h-20" placeholder="Ex: Bonne énergie..."></textarea>
+                </div>
+                <div class="flex gap-3 mt-6">
+                    <button type="button" onclick="closeModal()" class="w-full py-2 text-slate-400 hover:text-white transition">Annuler</button>
+                    <button type="submit" class="w-full btn-primary shadow-lg shadow-emerald-500/20">Enregistrer</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <script>
+        function toggleMenu() {
+            const sidebar = document.getElementById('sidebar');
+            sidebar.classList.toggle('hidden');
+            sidebar.classList.toggle('flex');
+        }
+
+        const workouts = [
+            {
+                title: "Lundi: Upper Push",
+                subtitle: "Pecs / Epaules / Triceps",
+                color: "emerald",
+                calories: "~260 kcal",
+                why: "Focus définition & largeur. Volume élevé.",
+                exercises: [
+                    { name: "Push-ups (AMRAP)", reps: "3 séries x MAX", note: "Torse au sol. Verrouille les coudes. Si >20, mets un sac à dos." },
+                    { name: "Standing Shoulder Press", reps: "4 x 15-20", note: "Strict. Pas d'aide des jambes. Serre en haut." },
+                    { name: "Lateral Raises (Side Delts)", reps: "4 x 15-20", note: "Mouvement de verser une carafe d'eau. Contrôle la descente !" },
+                    { name: "Diamond Push-ups", reps: "3 x Echec", note: "Mains en diamant sous le sternum." },
+                    { name: "Overhead Tricep Extension", reps: "3 x 15-20", note: "Coudes vers le plafond. Extension complète." }
+                ]
+            },
+            {
+                title: "Mardi: Lower Body",
+                subtitle: "Jambes & Abdos",
+                color: "blue",
+                calories: "~350 kcal",
+                why: "Gros groupe musculaire = Gros brûleur de calories.",
+                exercises: [
+                    { name: "Bulgarian Split Squats", reps: "3 x 10-12 / jambe", note: "Le Roi des exos. Pied arrière sur chaise. Descend en 3 sec." },
+                    { name: "Goblet Squats", reps: "4 x 20-25", note: "Poids contre la poitrine. Descend profond (coudes dans genoux)." },
+                    { name: "Single-Leg RDL", reps: "3 x 12-15 / jambe", note: "Dos plat. Ressens l'étirement derrière la cuisse." },
+                    { name: "Weighted Calf Raises", reps: "4 x 25", note: "Sur une marche si possible. Etirement max en bas." },
+                    { name: "Ab Circuit (Plank/Leg Raise/Twist)", reps: "3 Tours", note: "45s Gainage / 15 Relevés / 20 Twists. Pas de pause." }
+                ]
+            },
+            {
+                title: "Mercredi: Active Cardio",
+                subtitle: "Run / Corde à sauter",
+                color: "slate",
+                calories: "~400 kcal",
+                why: "Rythme cardiaque 140-160 BPM constant.",
+                exercises: [
+                    { name: "Option A: Run", reps: "5km", note: "Rythme régulier. Ajoute 5 sprints de 100m à la fin si tu as l'énergie." },
+                    { name: "Option B: Corde à sauter", reps: "10 mins", note: "1 min saut / 30 sec repos." },
+                    { name: "Shadow Boxing", reps: "3 Rounds x 3min", note: "Garde les mains hautes. Bouge les pieds." }
+                ]
+            },
+            {
+                title: "Jeudi: Upper Pull",
+                subtitle: "Dos / Biceps / Arrière Epaules",
+                color: "purple",
+                calories: "~240 kcal",
+                why: "Posture et forme en V.",
+                exercises: [
+                    { name: "Single-Arm Rows", reps: "4 x 20 / bras", note: "Tire vite, bloque 2 sec en haut, descend lentement." },
+                    { name: "Reverse Flyes", reps: "4 x 15", note: "Penche-toi à 90°. Ouvre les bras comme des ailes. Serre les omoplates." },
+                    { name: "Hammer Curls", reps: "3 x 15", note: "Paumes face à face. Ne balance pas le buste." },
+                    { name: "Bicep Curls (Supination)", reps: "3 x 12-15", note: "Paumes vers le ciel. Serre le petit doigt en haut." },
+                    { name: "Stomach Vacuum", reps: "5 x 20 sec", note: "Vide tout l'air. Aspire le nombril vers la colonne." }
+                ]
+            },
+            {
+                title: "Vendredi: HIIT",
+                subtitle: "Metabolic Conditioning",
+                color: "red",
+                calories: "~350 kcal + Afterburn",
+                why: "Dette d'oxygène. Brûle du gras pendant 24h après.",
+                exercises: [
+                    { name: "Circuit Complet (x4 Tours)", reps: "Repos 90s entre tours", note: "Enchaîne tout sans pause." },
+                    { name: "1. Jump Squats", reps: "15 reps", note: "Explosif." },
+                    { name: "2. Push-ups", reps: "15 reps", note: "Rapide mais propre." },
+                    { name: "3. Kettlebell Swings (ou DB)", reps: "20 reps", note: "Pousse avec les hanches, pas les bras." },
+                    { name: "4. Mountain Climbers", reps: "30 sec", note: "Genoux poitrine." },
+                    { name: "5. Burpees", reps: "10 reps", note: "Courage." }
+                ]
+            }
+        ];
+
+        const targets = {
+            weight: [69.9, 71.0, 70.8, 70.5, 71.0, 71.5, 72.0],
+            fat:    [17.0, 16.5, 15.5, 14.5, 13.5, 13.0, 12.0],
+            muscle: [55.0, 56.5, 56.8, 57.2, 57.8, 58.3, 59.0]
+        };
+
+        const defaultGroceries = [
+            { name: "Flocons d'Avoine (1kg)", done: false },
+            { name: "Riz Basmati (1kg)", done: false },
+            { name: "Pâtes (1kg)", done: false },
+            { name: "Pommes de terre (1kg)", done: false },
+            { name: "Pain Complet", done: false },
+            { name: "Bananes (x7)", done: false },
+            { name: "Oeufs (Plateau 30)", done: false },
+            { name: "Cuisses Poulet (1kg)", done: false },
+            { name: "Steaks Hachés 5-15% (700g)", done: false },
+            { name: "Fromage Blanc (1kg x2)", done: false },
+            { name: "Haricots Verts / Epinards", done: false },
+            { name: "Beurre Cacahuète / Huile", done: false }
+        ];
+
+        let appData = {
+            logs: [],
+            groceries: JSON.parse(JSON.stringify(defaultGroceries)),
+            habits: { creatine: false, water: false, protein: false, date: new Date().toLocaleDateString() }
+        };
+
+        let currentChartRange = 'all'; 
+
+        function loadData() {
+            const saved = localStorage.getItem('SolanoWorkoutDataV2');
+            if (saved) {
+                appData = JSON.parse(saved);
+            } else {
+                appData.logs.push({
+                    date: new Date().toISOString().split('T')[0],
+                    weight: 69.9,
+                    fat: 17.0,
+                    muscle: 55.0,
+                    water: 56.9,
+                    bmi: 21.3,
+                    notes: "Point de départ",
+                    habits: { creatine: false, water: false, protein: false }
+                });
+            }
+            // Load today's habits from today's log if it exists
+            const today = new Date().toISOString().split('T')[0];
+            const todayLog = appData.logs.find(l => l.date === today);
+            if (todayLog && todayLog.habits) {
+                appData.habits = { ...todayLog.habits, date: today };
+            } else {
+                appData.habits = { creatine: false, water: false, protein: false, date: today };
+            }
+            renderWorkouts();
+            updateUI();
+        }
+
+        function saveData() {
+            localStorage.setItem('SolanoWorkoutDataV2', JSON.stringify(appData));
+            updateUI();
+        }
+
+        function renderWorkouts() {
+            const container = document.getElementById('workout-container');
+            container.innerHTML = '';
+            workouts.forEach(w => {
+                const colorClass = w.color === 'emerald' ? 'border-emerald-500' : 
+                                   w.color === 'blue' ? 'border-blue-500' : 
+                                   w.color === 'purple' ? 'border-purple-500' :
+                                   w.color === 'red' ? 'border-red-500' : 'border-slate-500';
+                
+                const textClass = w.color === 'emerald' ? 'text-emerald-400' : 
+                                   w.color === 'blue' ? 'text-blue-400' : 
+                                   w.color === 'purple' ? 'text-purple-400' :
+                                   w.color === 'red' ? 'text-red-400' : 'text-slate-400';
+                
+                const bgBadge = w.color === 'emerald' ? 'bg-emerald-900/30 text-emerald-300' : 
+                                w.color === 'blue' ? 'bg-blue-900/30 text-blue-300' : 
+                                w.color === 'purple' ? 'bg-purple-900/30 text-purple-300' :
+                                w.color === 'red' ? 'bg-red-900/30 text-red-300' : 'bg-slate-700 text-slate-300';
+
+                let exercisesHtml = w.exercises.map(ex => `
+                    <div class="py-2 border-b border-slate-800 last:border-0">
+                        <div class="flex justify-between items-center">
+                            <span class="text-slate-200 font-medium text-sm">${ex.name}</span> 
+                            <span class="font-mono ${textClass} text-xs font-bold">${ex.reps}</span>
+                        </div>
+                        <p class="text-xs text-slate-500 mt-1 italic">${ex.note}</p>
+                    </div>
+                `).join('');
+
+                container.innerHTML += `
+                    <div class="card p-5 border-l-4 ${colorClass} h-fit">
+                        <div class="mb-4">
+                            <div class="flex justify-between items-start">
+                                <h3 class="text-lg font-bold text-white">${w.title}</h3>
+                                <span class="${bgBadge} text-xs px-2 py-1 rounded font-mono">${w.calories}</span>
+                            </div>
+                            <p class="text-xs text-slate-400 uppercase tracking-wide mt-1">${w.subtitle}</p>
+                            <p class="text-xs text-slate-500 mt-2 border-t border-slate-800 pt-2">💡 ${w.why}</p>
+                        </div>
+                        <div class="mt-2">
+                            ${exercisesHtml}
+                        </div>
+                    </div>
+                `;
+            });
+        }
+
+        function updateUI() {
+            if (appData.logs.length > 0) {
+                const latest = appData.logs[appData.logs.length - 1];
+                document.getElementById('disp-weight').innerText = latest.weight;
+                document.getElementById('disp-fat').innerText = latest.fat || '--';
+                document.getElementById('disp-muscle').innerText = latest.muscle || '--';
+                document.getElementById('disp-water').innerText = latest.water || '--';
+                document.getElementById('disp-bmi').innerText = latest.bmi || '--';
+            }
+            document.getElementById('habit-creatine').checked = appData.habits.creatine;
+            document.getElementById('habit-water').checked = appData.habits.water;
+            document.getElementById('habit-protein').checked = appData.habits.protein;
+            
+            // Update habit streaks
+            const creatineStreak = getHabitStreak('creatine');
+            const waterStreak = getHabitStreak('water');
+            const proteinStreak = getHabitStreak('protein');
+            document.getElementById('streak-creatine').innerText = creatineStreak > 0 ? `🔥 ${creatineStreak}j` : '-';
+            document.getElementById('streak-water').innerText = waterStreak > 0 ? `🔥 ${waterStreak}j` : '-';
+            document.getElementById('streak-protein').innerText = proteinStreak > 0 ? `🔥 ${proteinStreak}j` : '-';
+            
+            renderGroceries();
+            updateChart();
+            renderHistory();
+        }
+
+        function renderHistory() {
+            const tbody = document.getElementById('history-body');
+            tbody.innerHTML = '';
+            [...appData.logs].reverse().forEach((log, index) => {
+                const note = log.notes ? log.notes : '<span class="italic text-slate-600 text-xs">Aucune note</span>';
+                const row = `
+                    <tr class="hover:bg-slate-800/50 transition border-b border-slate-700/50 last:border-0">
+                        <td class="px-4 py-3 whitespace-nowrap text-slate-300 text-xs">${log.date}</td>
+                        <td class="px-4 py-3 font-bold text-white text-sm">${log.weight}</td>
+                        <td class="px-4 py-3 text-sm text-slate-400">${log.fat || '-'}</td>
+                        <td class="px-4 py-3 text-xs text-slate-400 max-w-xs break-words">${note}</td>
+                    </tr>`;
+                tbody.innerHTML += row;
+            });
+        }
+
+        function deleteLastLog() {
+            if (appData.logs.length > 0 && confirm("Supprimer la dernière entrée ?")) {
+                appData.logs.pop();
+                saveData();
+            }
+        }
+
+        function renderGroceries() {
+            const list = document.getElementById('grocery-list');
+            list.innerHTML = '';
+            appData.groceries.forEach((item, index) => {
+                list.innerHTML += `
+                    <div class="flex items-center justify-between p-2 bg-slate-800 rounded border border-slate-700 hover:border-slate-600 transition">
+                        <label class="flex items-center gap-3 cursor-pointer w-full">
+                            <input type="checkbox" ${item.done ? 'checked' : ''} onchange="toggleGrocery(${index})" class="accent-emerald-500 rounded w-4 h-4">
+                            <span class="${item.done ? 'line-through text-slate-600' : 'text-slate-300'} text-sm">${item.name}</span>
+                        </label>
+                        <button onclick="deleteGrocery(${index})" class="text-slate-600 hover:text-red-400 px-2"><i class="fas fa-times"></i></button>
+                    </div>
+                `;
+            });
+        }
+
+        function toggleDiet(day) {
+            if(day === 'A') {
+                document.getElementById('diet-content-A').classList.remove('hidden');
+                document.getElementById('diet-content-B').classList.add('hidden');
+                document.getElementById('btn-diet-A').classList.add('bg-emerald-600', 'text-white');
+                document.getElementById('btn-diet-A').classList.remove('text-slate-400');
+                document.getElementById('btn-diet-B').classList.remove('bg-blue-600', 'text-white');
+                document.getElementById('btn-diet-B').classList.add('text-slate-400');
+            } else {
+                document.getElementById('diet-content-A').classList.add('hidden');
+                document.getElementById('diet-content-B').classList.remove('hidden');
+                document.getElementById('btn-diet-B').classList.add('bg-blue-600', 'text-white');
+                document.getElementById('btn-diet-B').classList.remove('text-slate-400');
+                document.getElementById('btn-diet-A').classList.remove('bg-emerald-600', 'text-white');
+                document.getElementById('btn-diet-A').classList.add('text-slate-400');
+            }
+        }
+
+        let chartInstance = null;
+
+        function setChartRange(range) {
+            currentChartRange = range;
+            document.getElementById('btn-7d').classList.remove('active');
+            document.getElementById('btn-30d').classList.remove('active');
+            document.getElementById('btn-all').classList.remove('active');
+            document.getElementById('btn-' + range).classList.add('active');
+            updateChart();
+        }
+
+        function getChartData() {
+            let filteredLogs = [...appData.logs];
+            if (currentChartRange === '7d') filteredLogs = filteredLogs.slice(-7);
+            else if (currentChartRange === '30d') filteredLogs = filteredLogs.slice(-30);
+
+            let labels = filteredLogs.map(l => l.date);
+            let weightData = filteredLogs.map(l => l.weight);
+            let muscleData = filteredLogs.map(l => l.muscle);
+            let fatData = filteredLogs.map(l => l.fat);
+            
+            let projWeight = new Array(weightData.length).fill(null); 
+            let projMuscle = new Array(weightData.length).fill(null); 
+            let projFat = new Array(weightData.length).fill(null); 
+
+            const showProjection = document.getElementById('toggle-projection').checked;
+            if (showProjection && currentChartRange === 'all') {
+                const startDate = new Date(appData.logs[0].date);
+                targets.weight.forEach((targetW, index) => {
+                    const futureDate = new Date(startDate);
+                    futureDate.setMonth(startDate.getMonth() + index);
+                    const dateStr = futureDate.toISOString().split('T')[0];
+                    const targetM = targets.muscle[index];
+                    const targetF = targets.fat[index];
+
+                    if (!labels.includes(dateStr)) {
+                        if (index > 0) {
+                            labels.push(dateStr);
+                            weightData.push(null); muscleData.push(null); fatData.push(null);
+                            projWeight.push(targetW); projMuscle.push(targetM); projFat.push(targetF);
+                        } else {
+                            projWeight[0] = targetW; projMuscle[0] = targetM; projFat[0] = targetF;
+                        }
+                    } else {
+                        const idx = labels.indexOf(dateStr);
+                        projWeight[idx] = targetW; projMuscle[idx] = targetM; projFat[idx] = targetF;
+                    }
+                });
+            }
+            return { labels, weightData, muscleData, fatData, projWeight, projMuscle, projFat };
+        }
+
+        function updateChart() {
+            const ctx = document.getElementById('progressChart').getContext('2d');
+            const data = getChartData();
+
+            if (chartInstance) chartInstance.destroy();
+
+            chartInstance = new Chart(ctx, {
+                type: 'line',
+                data: {
+                    labels: data.labels,
+                    datasets: [
+                        { label: 'Poids (kg)', data: data.weightData, borderColor: '#e2e8f0', backgroundColor: '#e2e8f0', borderWidth: 2, tension: 0.3, yAxisID: 'y' },
+                        { label: 'Muscle (kg)', data: data.muscleData, borderColor: '#10b981', backgroundColor: '#10b981', borderWidth: 2, tension: 0.3, yAxisID: 'y' },
+                        { label: 'Body Fat (%)', data: data.fatData, borderColor: '#f97316', backgroundColor: '#f97316', borderWidth: 2, tension: 0.3, yAxisID: 'y1' },
+                        { label: 'Obj. Poids', data: data.projWeight, borderColor: '#94a3b8', borderWidth: 2, borderDash: [5, 5], tension: 0.3, spanGaps: true, yAxisID: 'y', pointRadius: 0 },
+                        { label: 'Obj. Muscle', data: data.projMuscle, borderColor: '#059669', borderWidth: 2, borderDash: [5, 5], tension: 0.3, spanGaps: true, yAxisID: 'y', pointRadius: 0 },
+                        { label: 'Obj. Fat', data: data.projFat, borderColor: '#ea580c', borderWidth: 2, borderDash: [5, 5], tension: 0.3, spanGaps: true, yAxisID: 'y1', pointRadius: 0 }
+                    ]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    interaction: { mode: 'index', intersect: false },
+                    scales: {
+                        y: { type: 'linear', display: true, position: 'left', grid: { color: '#334155' }, ticks: { color: '#94a3b8' }, title: { display: true, text: 'Poids / Muscle (kg)', color: '#94a3b8' } },
+                        y1: { type: 'linear', display: true, position: 'right', grid: { drawOnChartArea: false }, ticks: { color: '#f97316' }, title: { display: true, text: 'Body Fat (%)', color: '#f97316' } },
+                        x: { grid: { display: false }, ticks: { color: '#94a3b8', maxTicksLimit: 8 } }
+                    },
+                    plugins: { legend: { labels: { color: '#e2e8f0', usePointStyle: true, boxWidth: 6 } } }
+                }
+            });
+        }
+
+        function switchTab(tabName) {
+            document.querySelectorAll('.tab-content').forEach(el => el.classList.add('hidden'));
+            document.getElementById('tab-' + tabName).classList.remove('hidden');
+            document.querySelectorAll('.nav-item').forEach(el => el.classList.remove('active', 'bg-slate-800', 'text-emerald-400'));
+            document.getElementById('nav-' + tabName).classList.add('active', 'text-emerald-400');
+            if(window.innerWidth < 768) {
+                const sidebar = document.getElementById('sidebar');
+                if(!sidebar.classList.contains('hidden')) toggleMenu();
+            }
+        }
+
+        function openModal() { document.getElementById('modal-metrics').classList.remove('hidden'); }
+        function closeModal() { document.getElementById('modal-metrics').classList.add('hidden'); }
+
+        function submitMetrics(e) {
+            e.preventDefault();
+            const today = new Date().toISOString().split('T')[0];
+            const newLog = {
+                date: today,
+                weight: parseFloat(document.getElementById('in-weight').value),
+                fat: parseFloat(document.getElementById('in-fat').value) || 0,
+                muscle: parseFloat(document.getElementById('in-muscle').value) || 0,
+                water: parseFloat(document.getElementById('in-water').value) || 0,
+                bmi: parseFloat(document.getElementById('in-bmi').value) || 0,
+                notes: document.getElementById('in-notes').value,
+                habits: {
+                    creatine: document.getElementById('habit-creatine').checked,
+                    water: document.getElementById('habit-water').checked,
+                    protein: document.getElementById('habit-protein').checked
+                }
+            };
+            // Check if log for today already exists
+            const existingIndex = appData.logs.findIndex(l => l.date === today);
+            if (existingIndex >= 0) {
+                appData.logs[existingIndex] = { ...appData.logs[existingIndex], ...newLog };
+            } else {
+                appData.logs.push(newLog);
+            }
+            saveData();
+            closeModal();
+            e.target.reset();
+        }
+
+        function saveHabits() {
+            const today = new Date().toISOString().split('T')[0];
+            const habitState = {
+                creatine: document.getElementById('habit-creatine').checked,
+                water: document.getElementById('habit-water').checked,
+                protein: document.getElementById('habit-protein').checked
+            };
+            
+            // Update or create today's log with habits
+            const existingIndex = appData.logs.findIndex(l => l.date === today);
+            if (existingIndex >= 0) {
+                appData.logs[existingIndex].habits = habitState;
+            } else {
+                appData.logs.push({
+                    date: today,
+                    weight: null,
+                    fat: null,
+                    muscle: null,
+                    water: null,
+                    bmi: null,
+                    notes: '',
+                    habits: habitState
+                });
+            }
+            
+            appData.habits = { ...habitState, date: today };
+            saveData();
+        }
+
+        function getHabitStreak(habitName) {
+            let streak = 0;
+            for (let i = appData.logs.length - 1; i >= 0; i--) {
+                const log = appData.logs[i];
+                if (log.habits && log.habits[habitName]) {
+                    streak++;
+                } else {
+                    break;
+                }
+            }
+            return streak;
+        }
+
+        function toggleGrocery(index) {
+            appData.groceries[index].done = !appData.groceries[index].done;
+            saveData();
+        }
+
+        function addGroceryItem() {
+            const val = document.getElementById('new-item').value;
+            if(val) {
+                appData.groceries.push({name: val, done: false});
+                document.getElementById('new-item').value = '';
+                saveData();
+            }
+        }
+
+        function deleteGrocery(index) {
+            appData.groceries.splice(index, 1);
+            saveData();
+        }
+        
+        function resetGroceries() {
+            if(confirm("Remettre la liste à zéro ?")) {
+                appData.groceries = JSON.parse(JSON.stringify(defaultGroceries));
+                saveData();
+            }
+        }
+
+        function exportData() {
+            const dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(appData));
+            const downloadAnchorNode = document.createElement('a');
+            downloadAnchorNode.setAttribute("href", dataStr);
+            downloadAnchorNode.setAttribute("download", "SolanoWorkout_backup_" + new Date().toISOString().split('T')[0] + ".json");
+            document.body.appendChild(downloadAnchorNode);
+            downloadAnchorNode.click();
+            downloadAnchorNode.remove();
+        }
+
+        function importData() {
+            const file = document.getElementById('import-file').files[0];
+            if (!file) return;
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                try {
+                    appData = JSON.parse(e.target.result);
+                    saveData();
+                    alert("Données importées !");
+                } catch (e) { alert("Erreur fichier"); }
+            };
+            reader.readAsText(file);
+        }
+
+        loadData();
+    </script>
+</body>
+</html>
