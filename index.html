@@ -187,6 +187,20 @@
                                     </div>
                                     <span class="habit-streak text-xs bg-emerald-900/50 text-emerald-400 px-2 py-1 rounded" id="streak-protein"></span>
                                 </label>
+                                <label class="flex items-center justify-between space-x-3 cursor-pointer p-2 bg-slate-800 rounded hover:bg-slate-700 transition">
+                                    <div class="flex items-center space-x-3">
+                                        <input type="checkbox" id="habit-whey" class="w-5 h-5 accent-purple-500 rounded" onchange="saveHabits()">
+                                        <span class="font-medium text-white text-sm">Whey (25g)</span>
+                                    </div>
+                                    <span class="habit-streak text-xs bg-purple-900/50 text-purple-400 px-2 py-1 rounded" id="streak-whey"></span>
+                                </label>
+                                <label class="flex items-center justify-between space-x-3 cursor-pointer p-2 bg-slate-800 rounded hover:bg-slate-700 transition">
+                                    <div class="flex items-center space-x-3">
+                                        <input type="checkbox" id="habit-omega3" class="w-5 h-5 accent-orange-500 rounded" onchange="saveHabits()">
+                                        <span class="font-medium text-white text-sm">Omega 3 (2 pills)</span>
+                                    </div>
+                                    <span class="habit-streak text-xs bg-orange-900/50 text-orange-400 px-2 py-1 rounded" id="streak-omega3"></span>
+                                </label>
                             </div>
                         </div>
                     </div>
@@ -614,7 +628,7 @@
         let appData = {
             logs: [],
             groceries: JSON.parse(JSON.stringify(defaultGroceries)),
-            habits: { creatine: false, water: false, protein: false, date: new Date().toLocaleDateString() }
+            habits: { creatine: false, water: false, protein: false, whey: false, omega3: false, date: new Date().toLocaleDateString() }
         };
 
         let currentChartRange = 'all'; 
@@ -632,7 +646,7 @@
                     water: 56.9,
                     bmi: 21.3,
                     notes: "Point de départ",
-                    habits: { creatine: false, water: false, protein: false }
+                    habits: { creatine: false, water: false, protein: false, whey: false, omega3: false }
                 });
             }
             // Load today's habits from today's log if it exists
@@ -641,7 +655,7 @@
             if (todayLog && todayLog.habits) {
                 appData.habits = { ...todayLog.habits, date: today };
             } else {
-                appData.habits = { creatine: false, water: false, protein: false, date: today };
+                appData.habits = { creatine: false, water: false, protein: false, whey: false, omega3: false, date: today };
             }
             renderWorkouts();
             updateUI();
@@ -711,14 +725,20 @@
             document.getElementById('habit-creatine').checked = appData.habits.creatine;
             document.getElementById('habit-water').checked = appData.habits.water;
             document.getElementById('habit-protein').checked = appData.habits.protein;
+            document.getElementById('habit-whey').checked = appData.habits.whey;
+            document.getElementById('habit-omega3').checked = appData.habits.omega3;
             
             // Update habit streaks
             const creatineStreak = getHabitStreak('creatine');
             const waterStreak = getHabitStreak('water');
             const proteinStreak = getHabitStreak('protein');
+            const wheyStreak = getHabitStreak('whey');
+            const omega3Streak = getHabitStreak('omega3');
             document.getElementById('streak-creatine').innerText = creatineStreak > 0 ? `🔥 ${creatineStreak}j` : '-';
             document.getElementById('streak-water').innerText = waterStreak > 0 ? `🔥 ${waterStreak}j` : '-';
             document.getElementById('streak-protein').innerText = proteinStreak > 0 ? `🔥 ${proteinStreak}j` : '-';
+            document.getElementById('streak-whey').innerText = wheyStreak > 0 ? `🔥 ${wheyStreak}j` : '-';
+            document.getElementById('streak-omega3').innerText = omega3Streak > 0 ? `🔥 ${omega3Streak}j` : '-';
             
             renderGroceries();
             updateChart();
@@ -915,7 +935,9 @@
             const habitState = {
                 creatine: document.getElementById('habit-creatine').checked,
                 water: document.getElementById('habit-water').checked,
-                protein: document.getElementById('habit-protein').checked
+                protein: document.getElementById('habit-protein').checked,
+                whey: document.getElementById('habit-whey').checked,
+                omega3: document.getElementById('habit-omega3').checked
             };
             
             // Update or create today's log with habits
